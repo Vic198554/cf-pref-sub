@@ -1,0 +1,30 @@
+name: 更新CF优选IP
+
+on:
+  schedule:
+    - cron: "17 4 * * *"   # 每天 UTC 04:17 跑（北京时间约 12:17）
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 生成优选清单
+        run: python build_preferred.py
+        env:
+          HTTPS_PROXY: ${{ secrets.HTTPS_PROXY }}
+          HTTP_PROXY: ${{ secrets.HTTP_PROXY }}
+      - name: 提交
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add preferred_ips.txt
+          git diff --cached --quiet || git commit -m "chore: 自动更新优选IP $(date +%F)"
+          git push
